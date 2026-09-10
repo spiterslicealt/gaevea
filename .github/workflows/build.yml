@@ -1,0 +1,33 @@
+name: Build J4CK3D C5
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download J4CK3D source
+        uses: actions/checkout@v4
+
+      - name: Build ESP32-C5
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5
+          target: esp32c5
+          path: .
+
+      - name: Collect firmware
+        run: |
+          mkdir firmware
+          cp build/*.bin firmware/ || true
+          cp build/flasher_args.json firmware/ || true
+          cp build/bootloader/bootloader.bin firmware/ || true
+          cp build/partition_table/partition-table.bin firmware/ || true
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: J4CK3D-NM-CYD-C5
+          path: firmware/
