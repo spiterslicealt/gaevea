@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download J4CK3D source
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Build ESP32-C5
@@ -18,16 +18,30 @@ jobs:
           target: esp32c5
           path: .
 
+      - name: Check and set 16MB flash
+        run: |
+          grep -E 'CONFIG_ESPTOOLPY_FLASHSIZE|CONFIG_ESPTOOLPY_FLASHSIZE_.*MB' sdkconfig || true
+          sed -i 's/CONFIG_ESPTOOLPY_FLASHSIZE="2MB"/CONFIG_ESPTOOLPY_FLASHSIZE="16MB"/' sdkconfig
+          sed -i 's/CONFIG_ESPTOOLPY_FLASHSIZE_2MB=y/CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y/' sdkconfig
+          grep -E 'CONFIG_ESPTOOLPY_FLASHSIZE|CONFIG_ESPTOOLPY_FLASHSIZE_.*MB' sdkconfig
+
+      - name: Rebuild
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5
+          target: esp32c5
+          path: .
+
       - name: Collect firmware
         run: |
-          mkdir firmware
-          cp build/*.bin firmware/ || true
-          cp build/flasher_args.json firmware/ || true
-          cp build/bootloader/bootloader.bin firmware/ || true
-          cp build/partition_table/partition-table.bin firmware/ || true
+          mkdir -p firmware
+          cp build/bootloader/bootloader.bin firmware/
+          cp build/partition_table/partition-table.bin firmware/
+          cp build/*.bin firmware/
+          cp build/flasher_args.json firmware/
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          name: J4CK3D-NM-CYD-C5
+          name: J4CK3D-NM-CYD-C5-16MB
           path: firmware/
